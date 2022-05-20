@@ -48,8 +48,12 @@ def quit_action (client_sock, attempts):
 # Suporte da execução do cliente
 #
 def run_client (client_sock, client_id):
-	print('START CONNECTION')
-	print(sendrecv_dict(client_sock, { 'op': 'START', 'client_id':client_id}))
+	print('STARTING CONNECTION...')
+	print(sendrecv_dict(client_sock, { 'op': 'START', 'client_id': client_id}))
+	print(sendrecv_dict(client_sock, { 'op': 'NUMBER', 'number': 1 }))
+	print(sendrecv_dict(client_sock, { 'op': 'NUMBER', 'number': 2 }))
+	print(sendrecv_dict(client_sock, { 'op': 'NUMBER', 'number': 3 }))
+	print(sendrecv_dict(client_sock, { 'op': 'STOP' }))
 	
 	return None
 	
@@ -65,19 +69,19 @@ def main():
 
 	# Validate the number of arguments and eventually print error message and exit with error
 	if argc < 3 or argc > 4:
-		print('[ERROR] Wrong number of Arguments for Client Connection')
+		print('[ERROR:1] Wrong number of Arguments for Client Connection')
 		exit(1)
 
 	# Verify format for port (Positive Integer)
 	if not argv[2].isdigit():
-		print('[ERROR] Wrong format for port: \'', argv[2], '\'')
+		print('[ERROR:2] Invalid value for port: \'', argv[2], '\'')
 		exit(1)
 	# Verify format for hostname (IPv4 Format) 
 	try:
 		if argc == 4:
 			socket.inet_aton(argv[3])
 	except socket.error:
-		print('[ERROR] Wrong format for hostname: \'', argv[3], '\'')
+		print('[ERROR:] Invalid value for hostname: \'', argv[3], '\'')
 		exit(1)
 
 	# Get client connection details from arguments
