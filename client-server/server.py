@@ -114,7 +114,7 @@ def quit_client (client_sock, request):
 	# Verify that client_id is active
 	# If not, send response with error message
 	if client_id is None:
-		errorMsg = 'Client with client_id \'' + client_id + '\' not active'
+		errorMsg = 'Client not active'
 		return send_dict(client_sock, { 'op': 'QUIT', 'status': False, 'error':  errorMsg})
 	
 	# Delete user from users list
@@ -134,13 +134,12 @@ def quit_client (client_sock, request):
 def create_file ():
 	# Header list for the report.csv
 	# WRITE
-	header = ['CLIENT_ID', '#VALUES', 'RESULT']
+	header = ['CLIENT_ID', '#VALUES', 'MIN', 'MAX']
 
 	file = open('./report.csv', 'w')
 	writer = csv.writer(file)
 	writer.writerow(header)
 
-	return writer
 # create report csv file with header
 
 
@@ -148,7 +147,9 @@ def create_file ():
 # Suporte da actualização de um ficheiro csv com a informação do cliente e resultado
 #
 def update_file (client_id, result):
-	return None
+	file = open('./report.csv', 'a')
+	writer = csv.writer(file)
+	writer.writerow(result)
 # update report csv file with the result from the client
 
 
@@ -185,8 +186,8 @@ def stop_client (client_sock, request):
 	# Check if client is active
 	# If not, send response with error message
 	if client_id is None:
-		errorMsg = 'Client with client_id \'' + client_id + '\' not active'
-		return send_dict(client_sock, { 'op': 'STOP', 'status': False, 'error':  errorMsg})
+		errorMsg = 'Client not active'
+		return send_dict(client_sock, { 'op': 'STOP', 'status': False, 'error':  errorMsg })
 
 	# Process client's number list
 	numbers = users[client_id]['numbers']
@@ -195,7 +196,8 @@ def stop_client (client_sock, request):
 		maxNum = max(numbers)
 		minNum = min(numbers)
 		# Write data in report
-		# update_file(client_id, '')
+		row = [client_id, len(numbers), minNum, maxNum]
+		update_file(client_id, row)
 		# Build response message
 		res = send_dict(client_sock, { 'op': 'STOP', 'status': True, 'min': minNum, 'max': maxNum})
 	else:
@@ -203,11 +205,11 @@ def stop_client (client_sock, request):
 		errorMsg = 'Not enough data to process request from client \'' + client_id + '\''
 		res = send_dict(client_sock, { 'op': 'STOP', 'status': False, 'error':  errorMsg})
 
-
 	# Remove user from users dictionary
 	del users[client_id]
 
 	# Return status message for operation to client
+	return res
 
 	
 # obtain the client_id from his socket

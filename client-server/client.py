@@ -49,6 +49,7 @@ def quit_action (client_sock, attempts):
 #
 def run_client (client_sock, client_id):
 	print('STARTING CONNECTION...')
+	print(sendrecv_dict(client_sock, { 'op': 'QUIT' }))
 	print(sendrecv_dict(client_sock, { 'op': 'START', 'client_id': client_id}))
 	print(sendrecv_dict(client_sock, { 'op': 'NUMBER', 'number': 1 }))
 	print(sendrecv_dict(client_sock, { 'op': 'NUMBER', 'number': 2 }))
