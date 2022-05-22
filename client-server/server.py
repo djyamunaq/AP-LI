@@ -52,9 +52,10 @@ def decrypt_intvalue (client_id, data):
 # Suporte de descodificação da operação pretendida pelo cliente
 #
 def new_msg (client_sock):
+	# Get request from client
 	req = recv_dict(client_sock)
 
-	# Get operation from message
+	# Get operation from request
 	op = req['op']
 
 	if op == 'START':
@@ -65,11 +66,6 @@ def new_msg (client_sock):
 		return number_client(client_sock, req)
 	if op == 'STOP':
 		return stop_client(client_sock, req)
-# read the client request
-# detect the operation requested by the client
-# execute the operation and obtain the response (consider also operations not available)
-# send the response to the client
-
 
 #
 # Suporte da criação de um novo jogador - operação START
@@ -83,26 +79,24 @@ def new_client (client_sock, request):
 
 	# Verify that client_id is not in use
 	if client_id in users.keys():
-		errorMsg = 'Client with client_id \'' + client_id + '\' already connected'
+		errorMsg = '[ERROR] Client with client_id \'' + str(client_id) + '\' already connected'
 		return send_dict(client_sock, { 'op': 'START', 'status': False, 'error':  errorMsg})
 	
 	# Add user register to users dictionary
 	users[client_id] = { 'socket': client_sock, 'numbers': [] }
+
 	# Return successful message to client
 	return send_dict(client_sock, { 'op': 'START', 'status': True })
-# detect the client in the request
-# verify the appropriate conditions for executing this operation
-# process the client in the dictionary
-# return response message with or without error message
-
 
 #
 # Suporte da eliminação de um cliente
 #
 def clean_client (client_sock):
-	return None
-# obtain the client_id from his socket and delete from the dictionary
-
+	# Find client id
+	client_id = find_client_id(client_sock)
+	# If client exists, remove from users dictionary
+	if client_id is not None:
+		del users[client_id]
 
 #
 # Suporte do pedido de desistência de um cliente - operação QUIT
@@ -114,34 +108,26 @@ def quit_client (client_sock, request):
 	# Verify that client_id is active
 	# If not, send response with error message
 	if client_id is None:
-		errorMsg = 'Client not active'
+		errorMsg = '[ERROR] Client not active'
 		return send_dict(client_sock, { 'op': 'QUIT', 'status': False, 'error':  errorMsg})
 	
-	# Delete user from users list
-	del users[client_id]
+	# Clean client data
+	clean_client(client_sock)
+
 	# Return success message to client
 	return send_dict(client_sock, { 'op': 'QUIT', 'status': True })
-# obtain the client_id from his socket
-# verify the appropriate conditions for executing this operation
-# process the report file with the QUIT result
-# eliminate client from dictionary
-# return response message with or without error message
-
 
 #
 # Suporte da criação de um ficheiro csv com o respectivo cabeçalho
 #
 def create_file ():
 	# Header list for the report.csv
-	# WRITE
 	header = ['CLIENT_ID', '#VALUES', 'MIN', 'MAX']
 
+	# Open file and write header
 	file = open('./report.csv', 'w')
 	writer = csv.writer(file)
 	writer.writerow(header)
-
-# create report csv file with header
-
 
 #
 # Suporte da actualização de um ficheiro csv com a informação do cliente e resultado
@@ -150,8 +136,6 @@ def update_file (client_id, result):
 	file = open('./report.csv', 'a')
 	writer = csv.writer(file)
 	writer.writerow(result)
-# update report csv file with the result from the client
-
 
 #
 # Suporte do processamento do número de um cliente - operação NUMBER
@@ -162,20 +146,24 @@ def number_client (client_sock, request):
 	# Check if client is active
 	# If not, send response with error message
 	if client_id is None:
-		errorMsg = 'Client with client_id \'' + client_id + '\' not active'
-		return send_dict(client_sock, { 'op': 'QUIT', 'status': False, 'error':  errorMsg})
+		errorMsg = '[ERROR] Client with client_id \'' + str(client_id) + '\' not active'
+		return send_dict(client_sock, { 'op': 'NUMBER', 'status': False, 'error':  errorMsg})
 
 	# Get number from request
 	number = request['number']
+
+	# Check if number only contain digits (Therefore int type)
+	if not number.isdigit():
+		errorMsg = '[ERROR] Wrong format for \'value\' argument in \'NUMBER value\' command'
+		return send_dict(client_sock, { 'op': 'NUMBER', 'status': False, 'error':  errorMsg})
+
+	# String to int
+	number = int(number)
 	# Add number to client list
 	users[client_id]['numbers'].append(number)
 
 	# Return success message to client
 	return send_dict(client_sock, { 'op': 'NUMBER', 'status': True})
-# obtain the client_id from his socket
-# verify the appropriate conditions for executing this operation
-# return response message with or without error message
-
 
 #
 # Suporte do pedido de terminação de um cliente - operação STOP
@@ -186,11 +174,12 @@ def stop_client (client_sock, request):
 	# Check if client is active
 	# If not, send response with error message
 	if client_id is None:
-		errorMsg = 'Client not active'
+		errorMsg = '[ERROR] Client not active'
 		return send_dict(client_sock, { 'op': 'STOP', 'status': False, 'error':  errorMsg })
 
 	# Process client's number list
 	numbers = users[client_id]['numbers']
+
 	if len(numbers) > 0:
 		# Get max and min from list
 		maxNum = max(numbers)
@@ -202,24 +191,15 @@ def stop_client (client_sock, request):
 		res = send_dict(client_sock, { 'op': 'STOP', 'status': True, 'min': minNum, 'max': maxNum})
 	else:
 		# Build response message
-		errorMsg = 'Not enough data to process request from client \'' + client_id + '\''
+		errorMsg = '[ERROR] Not enough data to process request from client \'' + str(client_id) + '\''
 		res = send_dict(client_sock, { 'op': 'STOP', 'status': False, 'error':  errorMsg})
 
-	# Remove user from users dictionary
-	del users[client_id]
+	# Clean client data
+	clean_client(client_sock)
 
 	# Return status message for operation to client
 	return res
 
-	
-# obtain the client_id from his socket
-# verify the appropriate conditions for executing this operation
-# process the report file with the result
-# eliminate client from dictionary
-# return response message with result or error message
-
-def print_connection_details(port):
-	print('Server connected at PORT', port)
 
 def main():
 	# Get number of arguments and values
@@ -243,7 +223,7 @@ def main():
 	server_socket.bind (("127.0.0.1", port))
 	server_socket.listen (10)
 
-	print_connection_details(port)
+	print('Server connected at PORT', port)
 
 	clients = []
 	create_file ()

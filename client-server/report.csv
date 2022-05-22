@@ -1,4 +1,4 @@
 CLIENT_ID,#VALUES,MIN,MAX
-client1,3,1,3
-client1,3,1,3
-client1,3,1,3
+client1,5,1,10
+client1,4,0,1209310210123
+client2,5,0,10
